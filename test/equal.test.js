@@ -1,15 +1,17 @@
-
+//test/equal.test.js
+import { objectSama, stringSama } from "../src/equal";
 
 test("test toBe", () => {
-    const name = "Eko";
+    const name = stringSama("Edi") ;
     const hello = `Hello ${name}`;
 
-    expect(hello).toBe('Hello Eko');
+    expect(hello).toBe('Hello Edi');
 });
 
 test("test toEqual", () => {
-    let person = {id: "eko"};
-    Object.assign(person, {name: "Eko"});
+    let person = {id: "1"};
+    Object.assign(person, {name: "Edi"});
 
-    expect(person).toEqual({id: "eko", name: "Eko"});
+    const testObject = objectSama(person)
+    expect(testObject).toEqual({id: "1", name: "Edi"});
 })
