@@ -82,7 +82,6 @@ import {sum, sumAll} from "../src/sum.js";
 test("test sum function 1", () => {
 
     const result = sum(1, 2);
-
     expect(result).toBe(3);
 
 });
@@ -363,4 +362,321 @@ Function akan dieksekusi sebelum unit test berjalan, jika terdapat lima unit tes
 afterEach(function) :
 Function akan dieksekusi setelah unit test selesai, jika terdapat lima unit test dalam file, artinya akan dieksekusi juga sebanyak lima kali
 
+One-Time Setup Function
+beforeAll(function) : Function akan dieksekusi sekali sebelum semua unit test berjalan di file unit test
+
+afterAll(function) : Function akan dieksekusi sekali setelah semua unit test selesai di file unit test
+
+
+
+```
+//test/setup.test.js
+import {sum} from "../src/sum.js";
+
+beforeAll(async () => {
+    console.info("Before All");
+});
+
+afterAll(async () => {
+    console.info("After All");
+});
+
+beforeEach(async () => {
+    console.info("Before Each");
+});
+
+afterEach(async () => {
+    console.info("After Each");
+});
+
+test("first test", async () => {
+    expect(sum(10, 10)).toBe(20);
+    console.info("First Test");
+})
+
+test("second test", () => {
+    expect(sum(10, 10)).toBe(20);
+    console.info("Second Test");
+})
+```
+
+15. Scoping
+
+Saat kita menggunakan Setup Function, secara default akan dieksekusi pada setiap test() function yang terdapat di file unit test
+Jest memiliki fitur scoping atau grouping, dimana kita bisa membuat group unit test menggunakan function describe()
+Setup Function yang dibuat di dalam describe() hanya digunakan untuk unit test di dalam describe() tersebut
+Namun Setup Function diluar describe() secara otomatis juga digunakan di dalam describe()
+
+```
+//test/scoping.test.js
+beforeAll(() => console.info("Before All Outer"));
+afterAll(() => console.info("After All Outer"));
+beforeEach(() => console.info("Before Each Outer"));
+afterEach(() => console.info("After Each Outer"));
+
+test("Test Outer", () => console.info("Test Outer"));
+
+describe("Inner", () => {
+
+    beforeAll(() => console.info("Before All Inner"));
+    afterAll(() => console.info("After All Inner"));
+    beforeEach(() => console.info("Before Each Inner"));
+    afterEach(() => console.info("After Each Inner"));
+
+    test("Test Inner", () => console.info("Test Inner"));
+
+});
+```
+16. Code Coverage
+
+Saat kita membuat unit test, kadang kita ingin tahu apakah semua kode kita sudah tercakupi dengan semua skenario unit test kita atau belum
+Jest memiliki fitur yang bernama Code Coverage, dengan ini, kita bisa melihat kode mana yang sudah tercakupi dengan unit test, dan mana yang belum
+Praktek ini merupakan salah satu best practice dengan menentukan jumlah persentase kode yang harus tercakupi oleh unit test, misal 80%
+
+package.json
+```
+ "jest": {
+    "maxConcurrency" : 2,
+    "verbose": true,
+    "transform": {
+      "^.+\\.[t|j]sx?$": "babel-jest"
+    },
+    "collectCoverage": true,
+```
+
+Jest Code Coverage secara otomatis membuat folder coverage di project kita
+Jangan lupa untuk meng-ignore folder tersebut agar tidak ter commit ke project kita
+Folder coverage tersebut berisi laporan Code Coverage berupa file html yang bisa kita lihat dengan mudah
+
+Coverage Threshold
+
+Kadang ada kalanya kita ingin memastikan persentase Code Coverage, hal ini agar programmer dalam project pasti membuat unit test dengan baik
+Jest memiliki fitur untuk menentukan Coverage Threshold dengan persentase, dimana jika Threshold nya dibawah persentase yang sudah ditentukan, secara otomatis maka unit test akan gagal
+
+package.json
+
+```
+  "jest": {
+    "maxConcurrency" : 2,
+    "verbose": true,
+    "transform": {
+      "^.+\\.[t|j]sx?$": "babel-jest"
+    },
+    "collectCoverage": true,
+    "coverageThreshold": {
+      "global": {
+        "branches": 100,
+        "functions": 100,
+        "lines": 100,
+        "statements": 100
+      }
+    },
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}",
+      "!vendor/**/*.{js,jsx}"
+    ]
+  },
+```
+
+Collect Coverage
+
+Kadang saat project kita sudah besar, kita ingin menentukan bagian kode mana yang ingin digunakan untuk menghitung Code Coverage nya
+Kita bisa menggunakan atribut collectCoveerageFrom
+
+17. It Function
+
+Sebelumnya untuk membuat unit test, kita menggunakan function test()
+Di Jest, terdapat alias untuk function test(), yaitu it()
+Sebenarnya tidak ada bedanya dengan function test(), hanya saja, kadang ada programmer yang lebih suka menggunakan function it() agar unit test yang dibuat mirip dengan cerita ketika dibaca kodenya
+
+```
+import {sumAll} from "../src/sum.js";
+
+describe("when call sumAll()", () => {
+    it("should get 30 with parameter [10, 10, 10]", () => {
+        expect(sumAll([10, 10, 10])).toBe(30);
+    });
+    it("should get 50 with parameter [10, 10, 10, 10, 10]", () => {
+        expect(sumAll([10, 10, 10, 10, 10])).toBe(50);
+    });
+});
+```
+
+18. Skip Function
+
+Saat membuat unit test, lalu kita mendapatkan masalah di salah satu unit test, kadang kita ingin meng-ignore unit test tersebut terlebih dahulu
+Kita tidak perlu menambahkan komentar pada unit test tersebut
+Kita bisa menggunakan skip function, yang secara otomatis akan menjadikan unit test tersebut ter-ignore dan tidak akan di eksekusi
+
+```
+test("test 1", () => console.info("test 1"));
+test("test 2", () => console.info("test 2"));
+test.skip("test 3", () => console.info("test 3"));
+test("test 4", () => console.info("test 4"));
+test("test 5", () => console.info("test 5"));
+```
+
+19. Only Function
+
+Ketika kita melakukan proses debugging di unit test di dalam sebuah file yang unit test nya banyak, kadang kita ingin fokus ke unit test tertentu
+Jika kita menggunakan skip unit test yang lain, maka akan sulit jika terlalu banyak
+Kita bisa menggunakan Only Function, untuk memaksa dalam file tersebut, hanya unit test yang ditandai dengan Only yang di eksekusi
+
+```
+test("test 1", () => console.info("test 1"));
+test("test 2", () => console.info("test 2"));
+test.only("test 3", () => console.info("test 3"));
+test("test 4", () => console.info("test 4"));
+test("test 5", () => console.info("test 5"));
+```
+
+20. Each Function
+
+Duplicate Unit Test
+Salah satu kesalahan yang biasa dilakukan adalah membuat unit test yang duplicate
+Biasanya alasan melakukan duplicate unit test, hanya karena data yang di test nya saja berbeda
+
+```
+import {sumAll} from "../src/sum.js";
+
+
+test("sumAll [10, 10, 10]", () => {
+        expect(sumAll([10, 10, 10])).toBe(30);
+    });
+
+test("sumAll [10, 10, 10, 10, 10]", () => {
+     expect(sumAll([10, 10, 10, 10, 10])).toBe(50);
+    });
+
+```
+
+Each Function
+
+Pada kasus seperti ini, dimana kode unit test nya tidak berbeda, yang berbeda hanya datanya saja, sangat direkomendasikan menggunakan Each Function di Jest
+Each Function memungkinkan kita menggunakan data dalam bentuk array, yang akan di iterasi ke dalam kode unit test yang sama
+
+```
+import {sumAll} from "../src/sum.js";
+
+const table = [
+    [
+        [],
+        0
+    ],
+    [
+        [10],
+        10
+    ],
+    [
+        [10, 10, 10],
+        30
+    ],
+    [
+        [10, 10, 10, 10, 10],
+        50
+    ],
+    [
+        [10, 10, 10, 10, 10, 10, 10],
+        70
+    ]
+];
+
+test.each(table)("test sumAll(%s) should result %i", (numbers, expected) => {
+    expect(sumAll(numbers)).toBe(expected);
+})
+```
+
+Object Sebagai Data
+Kadang, saat menggunakan data Array, jika terlalu banyak parameternya, maka akan membingungkan
+Each Function juga bisa menggunakan data Object, namun kita perlu melakukan destructuring
+
+```
+import {sumAll} from "../src/sum.js";
+
+const table = [
+    {
+        numbers: [],
+        expected: 0
+    },
+    {
+        numbers: [10],
+        expected: 10
+    },
+    {
+        numbers: [10, 10, 10],
+        expected: 30
+    },
+    {
+        numbers: [10, 10, 10, 10, 10],
+        expected: 50
+    },
+    {
+        numbers: [10, 10, 10, 10, 10, 10, 10],
+        expected: 70
+    },
+];
+
+test.each(table)("test sumAll($numbers) should result $expected", ({numbers, expected}) => {
+    expect(sumAll(numbers)).toBe(expected);
+})
+```
+
+21. Todo Function
+
+Gunakan Todo Function ketika kita berencana membuat unit test, namun dilakukan
+Todo Function akan ditampilkan sebagai summary ketika kita menjalankan unit test, untuk mengingatkan kita
+
+```
+test.todo("Create test for sumAll() with big numbers");
+
+test.todo("Create test for sumAll() with negative numbers");
+```
+
+22. Failing Function
+Dalam membuat unit test, jangan hanya membuat skenario sukses
+Kadang kita juga perlu membuat skenario gagal, atau ekspektasi kita gagal, contoh misal ketika kita mengirim data tidak valid, maka kita berharap kalo kode nya terjadi error
+Pada kasus ini, Jest menyediakan fitur Failing Function
+
+```
+import {sayHello} from "../src/sayHello.js";
+
+test("sayHello success", () => {
+    expect(sayHello("Edy")).toBe("Hello Edy");
+});
+
+test.failing("sayHello error", () => {
+    sayHello(null);
+});
+
+test("sayHello error matchers", () => {
+    expect(() => sayHello(null)).toThrow();
+});
+```
+
+23. Mock
+
+Kesulitan Unit Test
+
+Saat membuat unit test, kadang kita terkendala dengan bagian kode yang sulit di test
+Misal, terdapat kode yang melakukan interaksi dengan sistem lain, misal database, message broker, third party web service, dan lain-lain
+Jika kita lakukan unit test dengan cara berinteraksi secara langsung, maka akan sulit untuk konsisten, misal unit test pertama sukses, ketika dijalankan lagi, ternyata gagal karena datanya sudah ada yang sebelumnya
+Pada kasus seperti ini, ada baiknya kita melakukan Mocking
+
+Dalam pemrograman, Mock Object adalah object tiruan yang kita buat, yang tingkah lakunya menyerupai dengan object aslinya
+Salah satu fitur dalam Mock Object adalah, kita bisa memberitahu tingkah laku dari object tersebut sesuai dengan yang kita inginkan
+Mock Object ini menjadi sangat cocok untuk kita gunakan ketika melakukan unit test yang berhubungan dengan sistem lain, sehingga kita tidak perlu berinteraksi dengan sistem lain tersebut
+
+Jenis Mock
+
+Jest mendukung banyak jenis Mock, diantaranya
+Mock Function, yang bisa kita gunakan untuk membuat tiruan dari sebuah function
+Mock Class, yang bisa kita gunakan untuk membuat tiruan dari object Class
+Mock Modules, yang bisa kita gunakan untuk membuat tiruan dari Modules
+
+23.a. Mock Function
+
+Jest bisa digunakan untuk membuat mock function
+Dimana kita bisa membuat tiruan dari sebuah function
+Salah satu fitur dari mock function adalah, kita bisa melihat detail dari parameter yang digunakan untuk memanggil mock function tersebut
+Untuk membuat mock function, kita bisa menggunakan jest.fn()
 
