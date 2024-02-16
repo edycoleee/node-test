@@ -294,4 +294,44 @@ test("number.not", () => {
 Jest terintegrasi dengan baik jika kita ingin melakukan pengetesan terhadap kode yang async
 Namun saat kita melakukan pengetesan kode async, kita harus memberi tahu ke Jest, hal ini agar Jest tahu dan bisa menunggu kode async nya, sebelum melanjutkan ke unit test selanjutnya
 
+```
+//src/async.js
+export const sayHelloAsync = (name) => {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            if (name) {
+                resolve(`Hello ${name}`);
+            } else {
+                reject("Name is empty");
+            }
+        }, 1000);
+    });
+};
 
+export const getBalance = async (name, from) => {
+    const balance = await from();
+    return {
+        name: name,
+        balance: balance
+    };
+};
+```
+
+```
+//test/async.test.js
+import {sayHelloAsync} from "../src/async.js";
+
+test("test async function", async () => {
+    const result = await sayHelloAsync("Edy");
+    expect(result).toBe("Hello Edy");
+});
+
+test("test async matchers", async () => {
+    await expect(sayHelloAsync("Edy")).resolves.toBe("Hello Edy");
+    await expect(sayHelloAsync()).rejects.toBe("Name is empty");
+});
+```
+
+npx jest async.test.js
+
+14. 
