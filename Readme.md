@@ -24,6 +24,8 @@ Babel adalah JavaScript Compiler, yang digunakan untuk melakukan kompilasi kode 
 ```
 npm install --save-dev babel-jest
 npm install @babel/preset-env --save-dev
+npm install @babel/plugin-transform-runtime
+
 ```
 
 Menambahkan script di package.json
@@ -47,6 +49,22 @@ Membuat file babel.config.json :
 }
 ```
 
+menambahkan file babel.config.json
+```
+{
+  "presets": [
+    "@babel/preset-env"
+  ],
+  "plugins": [
+    [
+      "@babel/plugin-transform-runtime",
+      {
+        "regenerator": true
+      }
+    ]
+  ]
+}
+```
 
 4. Sum Function
 membuat file \src\sum.js
@@ -333,5 +351,16 @@ test("test async matchers", async () => {
 ```
 
 npx jest async.test.js
+expect(promise).resolves : Ekspektasi bahwa promise sukses, dan selanjutnya kita bisa gunakan Matchers function lainnya
 
-14. 
+expect(promise).rejects : Ekspektasi bahwa promise gagal, dan selanjutnya kita bisa gunakan Matchers function lainnya
+
+
+14. Setup Function
+beforeEach(function) :
+Function akan dieksekusi sebelum unit test berjalan, jika terdapat lima unit test dalam file, artinya akan dieksekusi juga sebanyak lima kali
+
+afterEach(function) :
+Function akan dieksekusi setelah unit test selesai, jika terdapat lima unit test dalam file, artinya akan dieksekusi juga sebanyak lima kali
+
+
