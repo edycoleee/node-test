@@ -682,6 +682,29 @@ Untuk membuat mock function, kita bisa menggunakan jest.fn()
 pengganti function >> callback ke mock function
 
 ```
+//function calculate > callback
+
+export const calculate = (numbers, callback) => {
+    let total = 0;
+    for (let number of numbers) {
+        total += number;
+    }
+    //memanggil fungsi dan mengirim parameter total
+    callback(total);
+}
+
+export const calculateAndReturn = (numbers, callback) => {
+    let total = 0;
+    for (let number of numbers) {
+        total += number;
+    }
+    //return function dan mengirim variable total
+    return callback(total);
+}
+```
+
+
+```
 import {calculate, calculateAndReturn} from "../src/sum.js";
 
 test("test calculate", () => {
@@ -689,11 +712,11 @@ test("test calculate", () => {
 
     calculate([10, 10, 10], callback);
     calculate([10, 10, 10, 10, 10], callback);
-
+    //hasilnya memanggil callback 2x
     expect(callback.mock.calls.length).toBe(2);
-
+    //hasil pemanggilan [30],[50] // semua hasil pada array pertama
     console.info(callback.mock.calls);
-
+    //callback pertama [0] dan hasil array [0]
     expect(callback.mock.calls[0][0]).toBe(30);
     expect(callback.mock.calls[1][0]).toBe(50);
 });
@@ -703,20 +726,20 @@ test("test calculate without mock function", () => {
         console.info(total);
     };
 
-    calculate([10, 10, 10], logging);
-    calculate([10, 10, 10, 10, 10], logging);
+    calculate([10, 10, 10], logging); // hasilnya tidak diketahu jika tanpa mock function
+    calculate([10, 10, 10, 10, 10], logging);//hanya sebatas dijalankan saja
 })
 
 test("test mock return value", () => {
     const callback = jest.fn();
-    callback.mockReturnValueOnce(40);
-    callback.mockReturnValueOnce(80);
+    callback.mockReturnValueOnce(40); // kalau mock function dipanggil akan return 40
+    callback.mockReturnValueOnce(80); // kalau mock function dipanggil akan return 80
 
     expect(calculateAndReturn([10, 10, 10], callback)).toBe(40);
     expect(calculateAndReturn([10, 10, 10], callback)).toBe(80);
 
-    expect(callback.mock.results[0].value).toBe(40);
-    expect(callback.mock.results[1].value).toBe(80);
+    expect(callback.mock.results[0].value).toBe(40); //panggil mock pertama
+    expect(callback.mock.results[1].value).toBe(80); // panggil mock ke dua
 });
 
 test("test mock implementation", () => {
@@ -724,7 +747,7 @@ test("test mock implementation", () => {
     callback.mockImplementation((total) => {
         return total * 2;
     });
-
+    //menjumlahkan kemudian return * 2
     expect(calculateAndReturn([10, 10, 10], callback)).toBe(60);
     expect(calculateAndReturn([10, 10, 10, 10, 10], callback)).toBe(100);
 
