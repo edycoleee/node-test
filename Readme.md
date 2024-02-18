@@ -673,7 +673,7 @@ Mock Function, yang bisa kita gunakan untuk membuat tiruan dari sebuah function
 Mock Class, yang bisa kita gunakan untuk membuat tiruan dari object Class
 Mock Modules, yang bisa kita gunakan untuk membuat tiruan dari Modules
 
-23.a. Mock Function
+## Mock Function
 
 Jest bisa digunakan untuk membuat mock function
 Dimana kita bisa membuat tiruan dari sebuah function
@@ -756,3 +756,373 @@ test("test mock implementation", () => {
 });
 ```
 
+## Mock Async Function
+
+Jest juga bisa digunakan untuk membuat Mock Function yang bersifat Async, sehingga mengembalikan Promise
+mockResolvedValue(value) https://jestjs.io/docs/mock-function-api#mockfnmockresolvedvaluevalue
+mockRejectedValue(value) https://jestjs.io/docs/mock-function-api#mockfnmockrejectedvaluevalue
+
+```
+export const getBalance = async (name, from) => {
+    //from ini sebuah fungsi
+    const balance = await from();
+    return {
+        name: name,
+        balance: balance
+    };
+};
+```
+
+```
+import {getBalance} from "../src/async.js";
+
+test("mock async function", async () => {
+    const from = jest.fn();
+    //mock fungsi mengembalikan nilai 1000
+    from.mockResolvedValueOnce(1000);
+
+    await expect(getBalance("Edy", from)).resolves.toEqual({
+        name: "Edy",
+        balance: 1000
+    })
+    //fungsi hanya terpanggil 1 kali
+    expect(from.mock.calls.length).toBe(1);
+    //nilai return yang dikembalikan adalah 1000
+    await expect(from.mock.results[0].value).resolves.toBe(1000);
+});
+
+//test fail / reject
+test.failing("mock async function rejected", async () => {
+    const from = jest.fn();
+    //fungsi melakukan reject
+    from.mockRejectedValueOnce(new Error("Ups"));
+
+    await getBalance("Edy", from);
+});
+
+//test fail dengan matcher
+test("mock async function error matchers", async () => {
+    const from = jest.fn();
+    //mockmenghasilkan reject value string
+    from.mockRejectedValueOnce("Rejected");
+    //maka reject value string sama
+    await expect(getBalance("Edy", from)).rejects.toBe("Rejected");
+});
+```
+
+## Mock Matchers ==================== ini lebih mudah
+
+Sebelumnya, untuk mengecek berapa kali mock function dipanggil, atau apa parameter yang diterima oleh mock function, kita lakukan secara manual dengan mengecek data di mock property
+Jest sendiri menyediakan fitur Matchers untuk mock, dimana kita bisa melakukan matchers dengan lebih mudah dibandingkan secara manual
+
+expect(mock).toHaveBeenCalled() : 
+Memastikan mock pernah dipanggil
+expect(mock).toHaveBeenCalledTimes(number) : 
+Memastikan mock pernah dipanggil sebanyak number
+expect(mock).toHaveBeenCalledWith(arg1, arg2, ...) : 
+Memastikan mock pernah dipanggil dengan parameter
+
+```
+import {calculate} from "../src/sum.js";
+
+test("test mock matchers", () => {
+    const callback = jest.fn();
+
+    calculate([10, 10, 10], callback);
+    calculate([10, 10, 10, 10, 10], callback);
+
+    expect(callback).toHaveBeenCalled();  // mock callback pernah dipanggil
+    expect(callback).toHaveBeenCalledTimes(2); // mock callback pernah dipanggil 2x
+    expect(callback).toHaveBeenCalledWith(30); // mock callback pernah dipanggil dg parameter 30
+    expect(callback).toHaveBeenCalledWith(50); // mock callback pernah dipanggil dg parameter 50
+    //LEBIH MUDAH DENGAN MOCK MATCHER
+});
+```
+
+## Mock Modules  ==============================
+
+Saat membuat aplikasi, sudah pasti kita akan sering menggunakan JS Module, baik itu yang kita buat sendiri, atau JS Modules opensource. misalkan seperti operasi database
+
+Sumber Module database
+```
+export const getProductById = (id) => {
+    // select * from products where id = ${id}
+    throw new Error("Not Implemented");
+};
+
+export const getAllProducts = () => {
+    // select * from products
+    throw new Error("Not Implemented");
+};
+```
+
+Controller Module
+```
+import {getAllProducts, getProductById} from "./database.js";
+
+// menggunakan class
+// export class ProductService {
+
+//     static findById(id) {
+//         return getProductById(id);
+//     }
+
+//     static findAll() {
+//         return getAllProducts();
+//     }
+
+// }
+
+//menggunakan function
+function findById(id) {
+    return getProductById(id);
+}
+
+function findAll() {
+    return getAllProducts();
+}
+
+const ProductService = {
+    findById: findById,
+    findAll: findAll
+};
+
+export default ProductService;
+
+```
+
+Test Module
+```
+import {ProductService} from "../src/product-service.js";
+import {getAllProducts, getProductById} from "../src/database.js";
+//implementasi mock module
+jest.mock("../src/database.js");
+
+test("mock modules getProductById", () => {
+    // masukkan mock data
+    getProductById.mockImplementation((id) => {
+        return {
+            id: id,
+            name: "Product Mock"
+        }
+    });
+    //panggil service
+    const product = ProductService.findById(1);
+    //hasil return
+    expect(product).toEqual({
+        id: 1,
+        name: "Product Mock"
+    });
+});
+
+test("mock modules getAllProducts", () => {
+    const products = [
+        {
+            id: 1,
+            name: "Product Mock"
+        },
+        {
+            id: 2,
+            name: "Product Mock"
+        }
+    ];
+
+    getAllProducts.mockImplementation(() => {
+        return products;
+    });
+
+    expect(ProductService.findAll()).toEqual(products);
+});
+```
+
+## Mock Partial Modules ===================================
+
+Saat kita melakukan mock modules, maka secara default seluruh modules tersebut akan di mock oleh Jest
+Kadang, kita tidak ingin melakukan mock semua bagian di modules, mungkin hanya beberapa bagian saja
+
+```
+import {getAllProducts, getProductById} from "../src/database.js";
+import {ProductService} from "../src/product-service.js";
+
+jest.mock("../src/database.js", () => {
+    //original module >> semua modulnya
+    const originalModule = jest.requireActual("../src/database.js");
+
+    return {
+        __esModule: true,
+        ...originalModule, //semua module dipanggil
+        getAllProducts: jest.fn() //ditimpa dengan mock getAllProducts
+    }
+});
+
+//modul lain akan fail karena tidak implementasi
+test.failing("mock modules getProductById", () => {
+    ProductService.findById(1);
+});
+
+//hanya modul pastial ini saja yang di mock dan sukses
+test("mock modules getAllProducts", () => {
+    const products = [
+        {
+            id: 1,
+            name: "Product Mock"
+        },
+        {
+            id: 2,
+            name: "Product Mock"
+        }
+    ];
+
+    getAllProducts.mockImplementation(() => {
+        return products;
+    });
+
+    expect(ProductService.findAll()).toEqual(products);
+});
+```
+## Mock Class
+
+Sebelumnya kita sudah bahas tentang cara melakukan Mock Function, dan juga melakukan mock function di Modules
+Selain Function, Jest juga bisa digunakan untuk melakukan Mock Class
+Seperti yang sudah kita pelajari di JavaScript OOP, Class di JavaScript sebenarnya adalah Constructor Function, yang sebenarnya tidak ada bedanya dengan Function biasanya
+Oleh karena itu, untuk melakukan Mock Class, sama saja seperti kita melakukan Mock Function
+
+Class UserRepository >> koneksi ke DB
+```
+export class UserRepository {
+
+    save(user) {
+        throw new Error("Not implemented");
+    }
+
+    findById(id) {
+        throw new Error("Not implemented");
+    }
+
+    findAll() {
+        throw new Error("Not implemented");
+    }
+}
+```
+
+Class UserService >> koneksi ke UserRepository
+```
+import {UserRepository} from "./user-repository.js";
+
+export class UserService {
+
+    constructor(userRepository) {
+        if (userRepository) {
+            this.userRepository = userRepository;
+        } else {
+            this.userRepository = new UserRepository();
+        }
+    }
+
+    save(user) {
+        this.userRepository.save(user);
+    }
+
+    findById(id) {
+        return this.userRepository.findById(id);
+    }
+
+    findAll() {
+        return this.userRepository.findAll();
+    }
+
+}
+```
+
+Test Mock Class
+```
+import {UserRepository} from "../src/user-repository.js";
+import {UserService} from "../src/user-service.js";
+
+//mock service
+jest.mock("../src/user-repository.js");
+
+const repository = new UserRepository();
+const service = new UserService(repository);
+
+test("test mock user save", () => {
+
+    const user = {
+        id: 1,
+        name: "Eko"
+    };
+
+    service.save(user);
+    //service dipanggil
+    expect(repository.save).toHaveBeenCalled();
+    //service return user
+    expect(repository.save).toHaveBeenCalledWith(user);
+
+});
+
+test("test mock class findById",() => {
+    const user = {
+        id: 1,
+        name: "Eko"
+    };
+
+    repository.findById.mockReturnValueOnce(user);
+
+    expect(service.findById(1)).toEqual(user);
+    expect(repository.findById).toHaveBeenCalled();
+    expect(repository.findById).toHaveBeenCalledWith(1);
+})
+
+test("test mock class findAll",() => {
+    const users = [
+        {
+            id: 1,
+            name: "Eko"
+        },
+        {
+            id: 2,
+            name: "Eko"
+        }
+    ];
+
+    repository.findAll.mockReturnValueOnce(users);
+
+    expect(service.findAll()).toEqual(users);
+    expect(repository.findAll).toHaveBeenCalled();
+})
+```
+
+## Mock Partial Class
+
+Saat kita melakukan mock class dengan melakukan mock modules, secara otomatis semua function di class tersebut akan ter-mock
+Kadang, misal ada kasus dimana kita ingin melakukan mock hanya sebagian function saja di dalam class
+Pada kasus ini, kita bisa menggunakan jest.spyOn()
+
+```
+import {UserRepository} from "../src/user-repository.js";
+import {UserService} from "../src/user-service.js";
+
+const repository = new UserRepository();
+const service = new UserService(repository);
+
+test("test mock partial class findById", () => {
+    const user =  {
+        id: 1,
+        name: "Eko"
+    };
+    //mock secara partial findById
+    const findByIdMock = jest.spyOn(repository, "findById");
+    findByIdMock.mockReturnValueOnce(user);
+
+    expect(service.findById(1)).toEqual(user);
+    expect(findByIdMock).toHaveBeenCalled();
+    expect(findByIdMock).toHaveBeenCalledWith(1);
+    expect(repository.findById).toHaveBeenCalled();
+    expect(repository.findById).toHaveBeenCalledWith(1);
+});
+
+//yang lain otomatis akan fail
+test.failing("test mock partial findAll", () => {
+    service.findAll();
+});
+```
